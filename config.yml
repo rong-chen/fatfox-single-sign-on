@@ -1,0 +1,10 @@
+MYSQL:
+    host: 47.120.34.163
+    port: 3306
+    user: root
+    password: 130561Cr
+    db: registrationCenter
+REDIS:
+    host: 127.0.0.1
+    port: 6379
+    password:
