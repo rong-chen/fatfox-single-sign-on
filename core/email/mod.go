@@ -1,5 +1,10 @@
 package email
 
+import (
+	"sync"
+	"time"
+)
+
 type Params struct {
 	Email string `json:"email" gorm:"not null" form:"email"`
 }
@@ -12,6 +17,11 @@ type Body struct {
 	Password string
 	F, T, C  string
 	HtmlBody string
+}
+
+type MailLimiter struct {
+	lock     sync.Mutex
+	lastSent map[string]time.Time
 }
 
 var HtmlBody = `
