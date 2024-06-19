@@ -2,11 +2,14 @@ package token
 
 import "github.com/gin-gonic/gin"
 
-type Router struct{}
+type Router struct {
+}
 
-func (Router) InitRouter(r *gin.RouterGroup) {
-	router := r.Group("/token")
+func (Router) InitRouter(router *gin.RouterGroup) {
+	r := router.Group("token")
 	{
-		router.GET("/refresh", UpdateToken)
+		r.GET("/validTick", ValidTick)
+		r.GET("/refresh", Refresh)
+		r.GET("/validToken", validToken)
 	}
 }

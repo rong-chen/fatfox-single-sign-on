@@ -13,9 +13,9 @@ import (
 func Login(c *gin.Context) {
 
 	type Params struct {
-		Username string `json:"username" form:"username"  binding:"required"`
-		Password string `json:"password" form:"password"  binding:"required"`
-		Redirect string `json:"redirect" form:"redirect"  binding:"required"`
+		Username string `json:"username" form:"username" gorm:"commit:用户名" binding:"required"`
+		Password string `json:"password" form:"password" gorm:"commit:密码"   binding:"required"`
+		Redirect string `json:"redirect" form:"redirect" gorm:"commit:重定向的页面路由"   binding:"required"`
 	}
 	var p Params
 	err := c.BindJSON(&p)
@@ -23,15 +23,19 @@ func Login(c *gin.Context) {
 		c.JSON(200, global.BackResp(400, "参数不正确", err.Error()))
 		return
 	}
+
+	// 验证授权码
 	user := FindUser("username", p.Username)
 	if user.Id == uuid.Nil {
 		c.JSON(200, global.BackResp(400, "账号密码错误", nil))
 		return
 	}
+
 	if ok := utils.ComparePasswords(user.Password, p.Password); !ok {
 		c.JSON(200, global.BackResp(400, "账号密码错误", nil))
 		return
 	}
+
 	params := utils.Params{
 		Id:       user.Id,
 		Email:    user.Email,
@@ -40,10 +44,11 @@ func Login(c *gin.Context) {
 		Phone:    user.Phone,
 		Avatar:   user.Avatar,
 	}
-	aToken, _ := utils.GenerateJWT(params, utils.AccessToken, time.Now().Add(15*time.Minute))
-	rToken, _ := utils.GenerateJWT(params, utils.RefreshToken, time.Now().Add(24*time.Hour*30))
+
+	ticket, _ := utils.GenerateJWT(params, utils.TicketToken, "", time.Now().Add(time.Minute*30))
+	global.RedisDb.Set(c, user.Id.String(), ticket, 24*time.Hour*30)
 	resp := make(map[string]any)
-	resp["redirect"] = fmt.Sprintf("%s?atoken=%s&rtoken=%s", p.Redirect, aToken, rToken)
+	resp["redirect"] = fmt.Sprintf("%s?ticket=%s", p.Redirect, ticket)
 	c.JSON(200, global.BackResp(302, "", resp))
 }
 
@@ -62,7 +67,6 @@ func Register(c *gin.Context) {
 		c.JSON(200, global.BackResp(400, "验证码错误", nil))
 		return
 	}
-
 	password, _ := utils.HashPassword(cp.Password)
 	var info = &Info{
 		Email:    cp.Email,

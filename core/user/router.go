@@ -9,6 +9,6 @@ func (Router) InitRouter(group *gin.RouterGroup) {
 	r := group.Group("user")
 	{
 		r.POST("/register", Register)
-		r.POST("/login", Login)
+		r.POST("/company", Login)
 	}
 }

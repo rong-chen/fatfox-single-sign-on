@@ -1,9 +1,7 @@
 package initRouter
 
 import (
-	"fatfox-single-sign-on/core/email"
-	"fatfox-single-sign-on/core/token"
-	"fatfox-single-sign-on/core/user"
+	user2 "fatfox-single-sign-on/apiv2/user"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"net/http/httputil"
@@ -15,16 +13,14 @@ type RouterInterface interface {
 }
 
 var RouterList = []RouterInterface{
-	new(user.Router),
-	new(email.Router),
-	new(token.Router),
+	new(user2.Router),
 }
 
 func InitRouter(e *gin.Engine) {
 	// 所有其他路由都返回 index.html
 	e.StaticFile("/", "./dist/index.html") // 前端网页入口页面
 	e.Static("/assets", "./dist/assets")
-
+	e.Use(Cors())
 	// Fallback route to serve index.html for Vue Router history mode
 	e.NoRoute(func(c *gin.Context) {
 		c.File("./dist/index.html")
@@ -33,24 +29,24 @@ func InitRouter(e *gin.Engine) {
 	r := e.Group("")
 	r.Any("/api/*any", reverseProxy("127.0.0.1"))
 
-	Cors(r)
 	for _, routerInterface := range RouterList {
 		routerInterface.InitRouter(r)
 	}
 }
-func Cors(router *gin.RouterGroup) {
-	router.Use(func(c *gin.Context) {
+
+func Cors() gin.HandlerFunc {
+	return func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
-		c.Writer.Header().Set("Access-Control-Max-Age", "86400") // 一天内不再发送预检请求
+		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Authorization, A-Token, R-Token")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
 		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(http.StatusOK)
+			c.AbortWithStatus(204)
 			return
 		}
 
 		c.Next()
-	})
+	}
 }
 
 // 反向代理的处理器
